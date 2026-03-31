@@ -1,39 +1,31 @@
 import { motion } from "framer-motion";
 import { Heart } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useFavorites } from "../state/favorites.jsx";
 
-export default function MovieCard({ film }) {
-  const { isFavorite, toggleFavorite } = useFavorites();
-  const fav = isFavorite(film.id);
-
+export default function MovieCard({ movie, isFavorite, onToggleFavorite }) {
   return (
-    <motion.div whileHover={{ y: -3 }} transition={{ duration: 0.16, ease: "easeOut" }}>
-      <Link className="card" to={`/movies/${film.id}`} aria-label={`Open ${film.title}`}>
-        <div className="card__poster">
-          <img className="card__img" src={film.image} alt={film.title} loading="lazy" />
-          <div className="card__overlay">
-            <div className="card__title">{film.title}</div>
-            <div className="card__subtitle">{film.description}</div>
-          </div>
-        </div>
-
-        <div className="card__meta">
-          <div className="card__name" title={film.title}>
-            {film.title}
-          </div>
-          <button
-            className={fav ? "iconbtn iconbtn--active" : "iconbtn"}
-            onClick={(e) => {
-              e.preventDefault();
-              toggleFavorite(film.id);
-            }}
-            aria-label={fav ? "Remove from favorites" : "Add to favorites"}
-          >
-            <Heart size={16} />
-          </button>
-        </div>
+    <motion.article whileHover={{ y: -6, scale: 1.02 }} transition={{ duration: 0.25 }} className="movie-card">
+      <Link to={`/movies/${movie.id}`} className="movie-card__poster">
+        <img src={movie.image} alt={movie.title} loading="lazy" />
+        <span className="movie-card__overlay" />
       </Link>
-    </motion.div>
+
+      <div className="movie-card__body">
+        <div>
+          <h3>{movie.title}</h3>
+          <p>
+            {movie.rating} ★ • {movie.year}
+          </p>
+        </div>
+        <button
+          type="button"
+          className={`icon-button ${isFavorite ? "icon-button--active" : ""}`}
+          onClick={() => onToggleFavorite(movie.id)}
+          aria-label="Toggle favorite"
+        >
+          <Heart size={16} />
+        </button>
+      </div>
+    </motion.article>
   );
 }

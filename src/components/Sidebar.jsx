@@ -13,10 +13,6 @@ function SideNav({ variant }) {
     <nav className={variant === "bottom" ? "sidenav sidenav--bottom" : "sidenav"}>
       <div className="brand">
         <div className="brand__mark" aria-hidden="true" />
-        <div className="brand__text">
-          <div className="brand__name">Manas</div>
-          <div className="brand__sub">Cinema</div>
-        </div>
       </div>
 
       <div className="sidenav__links">
@@ -26,9 +22,10 @@ function SideNav({ variant }) {
             to={to}
             end={to === "/"}
             className={({ isActive }) => (isActive ? "navitem navitem--active" : "navitem")}
+            title={label}
           >
             <Icon size={20} />
-            <span>{label}</span>
+            <span className="srOnly">{label}</span>
           </NavLink>
         ))}
       </div>

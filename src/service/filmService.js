@@ -3,9 +3,7 @@ import { supabase } from "../supabase/supabase";
 export async function fetchFilms({ query } = {}) {
   const q = typeof query === "string" ? query.trim() : "";
 
-  let request = supabase.from("films").select("id,title,description,image").order("id", {
-    ascending: false,
-  });
+  let request = supabase.from("films").select("*");
 
   // Optional: server-side search for large catalogs (requires text fields).
   if (q) {

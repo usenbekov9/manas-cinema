@@ -1,47 +1,43 @@
-import { useMemo } from "react";
-import MovieCard from "../components/MovieCard.jsx";
-import { EmptyFavorites, LoadingBlock } from "../components/States.jsx";
-import { useFilms } from "../hooks/useFilms.js";
-import { useFavorites } from "../state/favorites.jsx";
+import { useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import MovieCard from "../components/MovieCard";
+import { getAllFilms, getFavoriteIds, toggleFavorite } from "../services/movieService";
 
-export default function FavoritesPage() {
-  const { favoriteIds } = useFavorites();
-  const { films, loading, error } = useFilms();
+export default function Favorites() {
+  const [movies, setMovies] = useState([]);
+  const [favoriteIds, setFavoriteIds] = useState([]);
 
-  const favorites = useMemo(() => {
-    const set = new Set(favoriteIds.map(String));
-    return films.filter((f) => set.has(String(f.id)));
-  }, [favoriteIds, films]);
+  useEffect(() => {
+    setFavoriteIds(getFavoriteIds());
+    getAllFilms()
+      .then(setMovies)
+      .catch(() => setMovies([]));
+  }, []);
 
-  if (loading) return <LoadingBlock title="Loading favorites…" />;
-  if (error) {
-    return (
-      <div className="panel">
-        <div className="panel__title">Can’t load favorites</div>
-        <div className="panel__sub">We couldn’t load movies from Supabase.</div>
-      </div>
-    );
-  }
+  const favorites = useMemo(() => movies.filter((movie) => favoriteIds.includes(movie.id)), [movies, favoriteIds]);
+
+  const handleToggleFavorite = (movieId) => setFavoriteIds(toggleFavorite(movieId));
 
   return (
-    <div className="stack">
-      <div className="pagehead">
-        <div>
-          <h1 className="pagehead__title">Favorites</h1>
-          <div className="pagehead__sub">{favorites.length} saved</div>
+    <motion.main className="page" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}>
+      <section className="page-heading">
+        <div className="container page-heading__inner">
+          <h1>Favorites</h1>
+          <p>Your saved movies and series.</p>
         </div>
-      </div>
-
-      {favoriteIds.length === 0 ? (
-        <EmptyFavorites />
-      ) : (
-        <div className="grid">
-          {favorites.map((film) => (
-            <MovieCard key={film.id} film={film} />
+      </section>
+      <section className="movie-grid-section">
+        <div className="container movie-grid">
+          {favorites.map((movie) => (
+            <MovieCard
+              key={movie.id}
+              movie={movie}
+              isFavorite={favoriteIds.includes(movie.id)}
+              onToggleFavorite={handleToggleFavorite}
+            />
           ))}
         </div>
-      )}
-    </div>
+      </section>
+    </motion.main>
   );
 }
-

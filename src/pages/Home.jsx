@@ -1,33 +1,56 @@
-import Hero from "../components/Hero.jsx";
-import Row from "../components/Row.jsx";
-import { LoadingBlock } from "../components/States.jsx";
-import { useFilms } from "../hooks/useFilms.js";
+import { useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import GenreFilter from "../components/GenreFilter";
+import HeroSlider from "../components/HeroSlider";
+import MovieRow from "../components/MovieRow";
+import { getAllFilms, parseGenres, toggleFavorite, getFavoriteIds } from "../services/movieService";
 
-export default function HomePage() {
-  const { films, loading, error } = useFilms();
+export default function Home() {
+  const [movies, setMovies] = useState([]);
+  const [favoriteIds, setFavoriteIds] = useState([]);
+  const [activeGenre, setActiveGenre] = useState("All");
 
-  if (loading) return <LoadingBlock title="Loading home…" />;
-  if (error) {
-    return (
-      <div className="panel">
-        <div className="panel__title">Something went wrong</div>
-        <div className="panel__sub">We couldn’t load movies from Supabase.</div>
-      </div>
+  useEffect(() => {
+    setFavoriteIds(getFavoriteIds());
+    getAllFilms()
+      .then(setMovies)
+      .catch(() => setMovies([]));
+  }, []);
+
+  const filtered = useMemo(() => {
+    if (activeGenre === "All") return movies;
+    return movies.filter((movie) =>
+      parseGenres(movie).some((genre) => genre.toLowerCase() === activeGenre.toLowerCase())
     );
-  }
+  }, [movies, activeGenre]);
 
-  const featured = films[0];
-  const trending = films.slice(0, 12);
-  const newForYou = films.slice(4, 16);
-  const topPicks = films.slice(10, 22);
+  const trending = filtered.slice(0, 10);
+  const popular = filtered.slice(5, 15);
+  const recentlyAdded = filtered.slice(0, 12);
+  const continueWatching = filtered.slice(8, 18);
+
+  const handleToggleFavorite = (movieId) => {
+    setFavoriteIds(toggleFavorite(movieId));
+  };
 
   return (
-    <div className="stack">
-      <Hero film={featured} />
-      <Row title="Trending now" films={trending} />
-      <Row title="New for you" films={newForYou} />
-      <Row title="Top picks" films={topPicks} />
-    </div>
+    <motion.main className="page page--home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}>
+      <HeroSlider movies={filtered} favoriteIds={favoriteIds} onToggleFavorite={handleToggleFavorite} />
+      <GenreFilter activeGenre={activeGenre} onChange={setActiveGenre} />
+      <MovieRow title="Trending Now" movies={trending} favoriteIds={favoriteIds} onToggleFavorite={handleToggleFavorite} />
+      <MovieRow title="Popular" movies={popular} favoriteIds={favoriteIds} onToggleFavorite={handleToggleFavorite} />
+      <MovieRow
+        title="Recently Added"
+        movies={recentlyAdded}
+        favoriteIds={favoriteIds}
+        onToggleFavorite={handleToggleFavorite}
+      />
+      <MovieRow
+        title="Continue Watching"
+        movies={continueWatching}
+        favoriteIds={favoriteIds}
+        onToggleFavorite={handleToggleFavorite}
+      />
+    </motion.main>
   );
 }
-

@@ -1,24 +1,51 @@
-import { Navigate, Route, Routes } from "react-router-dom";
-import AppLayout from "./layouts/AppLayout.jsx";
-import HomePage from "./pages/Home.jsx";
-import MoviesPage from "./pages/Movies.jsx";
-import FavoritesPage from "./pages/Favorites.jsx";
-import ProfilePage from "./pages/Profile.jsx";
-import MovieDetailsPage from "./pages/MovieDetails.jsx";
-import NotFoundPage from "./pages/NotFound.jsx";
+import { useState } from "react";
+import { NavLink, Route, Routes } from "react-router-dom";
+import Header from "./components/Header";
+import Footer from "./components/Footer";
+import HomePage from "./pages/Home";
+import MoviesPage from "./pages/Movies";
+import SeriesPage from "./pages/Series";
+import FavoritesPage from "./pages/Favorites";
+import MovieDetailsPage from "./pages/MovieDetails";
 
 export default function App() {
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+
+  const closeMenu = () => setShowMobileMenu(false);
+
   return (
-    <Routes>
-      <Route element={<AppLayout />}>
+    <div className="app">
+      <Header onToggleMobileMenu={() => setShowMobileMenu((prev) => !prev)} />
+
+      {showMobileMenu && (
+        <div className="mobile-menu">
+          <div className="container mobile-menu__inner">
+            <NavLink to="/" onClick={closeMenu}>
+              Home
+            </NavLink>
+            <NavLink to="/movies" onClick={closeMenu}>
+              Movies
+            </NavLink>
+            <NavLink to="/series" onClick={closeMenu}>
+              Series
+            </NavLink>
+            <NavLink to="/favorites" onClick={closeMenu}>
+              Favorites
+            </NavLink>
+          </div>
+        </div>
+      )}
+
+      <Routes>
         <Route index element={<HomePage />} />
         <Route path="movies" element={<MoviesPage />} />
-        <Route path="movies/:id" element={<MovieDetailsPage />} />
+        <Route path="series" element={<SeriesPage />} />
         <Route path="favorites" element={<FavoritesPage />} />
-        <Route path="profile" element={<ProfilePage />} />
-        <Route path="home" element={<Navigate to="/" replace />} />
-      </Route>
-      <Route path="*" element={<NotFoundPage />} />
-    </Routes>
+        <Route path="movies/:id" element={<MovieDetailsPage />} />
+        <Route path="*" element={<HomePage />} />
+      </Routes>
+
+      <Footer />
+    </div>
   );
 }

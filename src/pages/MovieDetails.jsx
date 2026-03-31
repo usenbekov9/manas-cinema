@@ -1,70 +1,84 @@
-import { ArrowLeft, Heart, Play } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import { Heart, Play } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
-import { LoadingBlock } from "../components/States.jsx";
-import { useFilm } from "../hooks/useFilm.js";
-import { useFavorites } from "../state/favorites.jsx";
+import MovieRow from "../components/MovieRow";
+import { getAllFilms, getFilmById, getFavoriteIds, parseGenres, toggleFavorite } from "../services/movieService";
 
-export default function MovieDetailsPage() {
+export default function MovieDetails() {
   const { id } = useParams();
-  const { film, loading, error } = useFilm(id);
-  const { isFavorite, toggleFavorite } = useFavorites();
+  const [movie, setMovie] = useState(null);
+  const [allMovies, setAllMovies] = useState([]);
+  const [favoriteIds, setFavoriteIds] = useState([]);
 
-  if (loading) return <LoadingBlock title="Loading details…" />;
-  if (error || !film) {
+  useEffect(() => {
+    setFavoriteIds(getFavoriteIds());
+    getFilmById(id)
+      .then(setMovie)
+      .catch(() => setMovie(null));
+    getAllFilms()
+      .then(setAllMovies)
+      .catch(() => setAllMovies([]));
+  }, [id]);
+
+  const relatedMovies = useMemo(() => {
+    if (!movie) return [];
+    const currentGenres = parseGenres(movie).map((item) => item.toLowerCase());
+    return allMovies
+      .filter((item) => item.id !== movie.id)
+      .filter((item) =>
+        parseGenres(item).some((genre) => currentGenres.includes(genre.toLowerCase()))
+      )
+      .slice(0, 10);
+  }, [allMovies, movie]);
+
+  if (!movie) {
     return (
-      <div className="panel">
-        <div className="panel__title">Movie not found</div>
-        <div className="panel__sub">This title doesn’t exist (or failed to load).</div>
-        <div className="panel__actions">
-          <Link className="btn btn--ghost" to="/movies">
-            <ArrowLeft size={18} /> Back to Movies
-          </Link>
-        </div>
-      </div>
+      <main className="page">
+        <div className="container empty-state">Movie not found.</div>
+      </main>
     );
   }
 
-  const fav = isFavorite(film.id);
+  const isFavorite = favoriteIds.includes(movie.id);
 
   return (
-    <div className="details">
-      <div className="details__hero" style={{ backgroundImage: `url(${film.image})` }}>
-        <div className="details__scrim" />
-        <div className="details__inner">
-          <Link className="btn btn--ghost btn--sm" to="/movies">
-            <ArrowLeft size={18} /> Back
-          </Link>
-
-          <div className="details__grid">
-            <div className="details__poster">
-              <img src={film.image} alt={film.title} />
-            </div>
-
-            <div className="details__info">
-              <h1 className="details__title">{film.title}</h1>
-              <p className="details__desc">{film.description}</p>
-
-              <div className="details__actions">
-                <button className="btn btn--primary" type="button">
-                  <Play size={18} /> Watch (UI)
-                </button>
-                <button
-                  className={fav ? "btn btn--ghost btn--active" : "btn btn--ghost"}
-                  type="button"
-                  onClick={() => toggleFavorite(film.id)}
-                >
-                  <Heart size={18} /> {fav ? "Saved" : "Save"}
-                </button>
-              </div>
-
-              <div className="details__note">
-                Streaming playback is UI-only here; your Supabase table powers the catalog and pages.
-              </div>
+    <motion.main className="page" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}>
+      <section className="details-hero">
+        <div className="container details-hero__shell">
+          <div className="details-hero__poster">
+            <img src={movie.image} alt={movie.title} />
+          </div>
+          <div className="details-hero__content">
+            <p className="details-hero__meta">
+              {parseGenres(movie).join(" • ")} • {movie.rating} ★ • {movie.year}
+            </p>
+            <h1>{movie.title}</h1>
+            <p>{movie.description}</p>
+            <div className="details-hero__actions">
+              <Link className="btn btn--primary" to="/">
+                <Play size={16} />
+                Watch
+              </Link>
+              <button
+                type="button"
+                className={`btn btn--ghost ${isFavorite ? "btn--favorite" : ""}`}
+                onClick={() => setFavoriteIds(toggleFavorite(movie.id))}
+              >
+                <Heart size={16} />
+                Add to Favorites
+              </button>
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </section>
+
+      <MovieRow
+        title="Related Movies"
+        movies={relatedMovies}
+        favoriteIds={favoriteIds}
+        onToggleFavorite={(movieId) => setFavoriteIds(toggleFavorite(movieId))}
+      />
+    </motion.main>
   );
 }
-
