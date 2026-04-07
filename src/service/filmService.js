@@ -1,36 +1,17 @@
-import { supabase } from "../supabase/supabase";
+import { getAllFilms, getFilmById, searchFilms } from "../services/movieService";
 
 export async function fetchFilms({ query } = {}) {
-  const q = typeof query === "string" ? query.trim() : "";
-
-  let request = supabase.from("films").select("*");
-
-  // Optional: server-side search for large catalogs (requires text fields).
-  if (q) {
-    request = request.or(`title.ilike.%${q}%,description.ilike.%${q}%`);
+  if (typeof query === "string" && query.trim()) {
+    return searchFilms(query);
   }
 
-  const { data, error } = await request;
-
-  if (error) {
-    console.error(error);
-    return [];
-  }
-
-  return data;
-};
+  return getAllFilms();
+}
 
 export async function fetchFilmById(id) {
-  const { data, error } = await supabase
-    .from("films")
-    .select("id,title,description,image")
-    .eq("id", id)
-    .maybeSingle();
-
-  if (error) {
-    console.error(error);
+  try {
+    return await getFilmById(id);
+  } catch {
     return null;
   }
-
-  return data ?? null;
 }

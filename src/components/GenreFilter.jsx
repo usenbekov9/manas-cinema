@@ -1,6 +1,11 @@
+import PropTypes from "prop-types";
+import { useLocale } from "../state/locale";
+
 const genres = ["All", "Action", "Adventure", "Animation", "Sci-Fi", "Crime", "Comedy", "Thriller"];
 
 export default function GenreFilter({ activeGenre, onChange }) {
+  const { t } = useLocale();
+
   return (
     <section className="genre-filter">
       <div className="container">
@@ -12,7 +17,7 @@ export default function GenreFilter({ activeGenre, onChange }) {
               className={`genre-filter__item ${activeGenre === genre ? "genre-filter__item--active" : ""}`}
               onClick={() => onChange(genre)}
             >
-              {genre}
+              {t(`genres.${genre}`)}
             </button>
           ))}
         </div>
@@ -20,3 +25,8 @@ export default function GenreFilter({ activeGenre, onChange }) {
     </section>
   );
 }
+
+GenreFilter.propTypes = {
+  activeGenre: PropTypes.string.isRequired,
+  onChange: PropTypes.func.isRequired,
+};

@@ -1,5 +1,7 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import PropTypes from "prop-types";
 import { useMemo, useRef } from "react";
+import { filmShape } from "../utils/propTypes";
 import MovieCard from "./MovieCard.jsx";
 
 function scrollByAmount(el, amount) {
@@ -38,11 +40,16 @@ export default function Row({ title, films }) {
       <div className="row__scroller" ref={scrollerRef}>
         {items.map((film) => (
           <div className="row__item" key={film.id}>
-            <MovieCard film={film} />
+            <MovieCard movie={film} />
           </div>
         ))}
       </div>
     </section>
   );
 }
+
+Row.propTypes = {
+  title: PropTypes.string.isRequired,
+  films: PropTypes.arrayOf(filmShape).isRequired,
+};
 

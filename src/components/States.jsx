@@ -1,32 +1,49 @@
 import { Film, HeartCrack } from "lucide-react";
+import PropTypes from "prop-types";
+import { useLocale } from "../state/locale";
 
-export function LoadingBlock({ title = "Loading…" }) {
+export function LoadingBlock({ title }) {
+  const { t } = useLocale();
+
   return (
     <div className="state">
       <div className="spinner" aria-hidden="true" />
-      <div className="state__title">{title}</div>
-      <div className="state__sub">Fetching the latest catalog.</div>
+      <div className="state__title">{title || t("states.loading")}</div>
+      <div className="state__sub">{t("states.loadingSub")}</div>
     </div>
   );
 }
 
-export function EmptyBlock({ title = "Nothing here yet", subtitle = "Try a different search." }) {
+export function EmptyBlock({ title, subtitle }) {
+  const { t } = useLocale();
+
   return (
     <div className="state">
       <Film size={22} className="state__icon" />
-      <div className="state__title">{title}</div>
-      <div className="state__sub">{subtitle}</div>
+      <div className="state__title">{title || t("states.empty")}</div>
+      <div className="state__sub">{subtitle || t("states.emptySub")}</div>
     </div>
   );
 }
 
 export function EmptyFavorites() {
+  const { t } = useLocale();
+
   return (
     <div className="state">
       <HeartCrack size={22} className="state__icon" />
-      <div className="state__title">No favorites yet</div>
-      <div className="state__sub">Tap the heart on a movie to save it.</div>
+      <div className="state__title">{t("states.noFavorites")}</div>
+      <div className="state__sub">{t("states.noFavoritesSub")}</div>
     </div>
   );
 }
+
+LoadingBlock.propTypes = {
+  title: PropTypes.string,
+};
+
+EmptyBlock.propTypes = {
+  title: PropTypes.string,
+  subtitle: PropTypes.string,
+};
 

@@ -1,4 +1,5 @@
 import { Heart, Home, ListVideo, User } from "lucide-react";
+import PropTypes from "prop-types";
 import { NavLink } from "react-router-dom";
 
 const links = [
@@ -32,6 +33,14 @@ function SideNav({ variant }) {
     </nav>
   );
 }
+
+SideNav.propTypes = {
+  variant: PropTypes.string,
+};
+
+SideNav.defaultProps = {
+  variant: undefined,
+};
 
 export default function Sidebar() {
   return (

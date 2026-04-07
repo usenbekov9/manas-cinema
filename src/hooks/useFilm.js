@@ -1,29 +1,39 @@
-import { useEffect, useState } from "react";
+import { useEffect, useReducer } from "react";
 import { fetchFilmById } from "../service/filmService";
 
 export function useFilm(id) {
-  const [film, setFilm] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [{ film, loading, error }, dispatch] = useReducer(
+    (state, action) => {
+      switch (action.type) {
+        case "start":
+          return { film: null, loading: true, error: null };
+        case "success":
+          return { film: action.film, loading: false, error: null };
+        case "error":
+          return { film: null, loading: false, error: action.error };
+        default:
+          return state;
+      }
+    },
+    {
+      film: null,
+      loading: true,
+      error: null,
+    }
+  );
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setError(null);
+    dispatch({ type: "start" });
 
     fetchFilmById(id)
       .then((data) => {
         if (cancelled) return;
-        setFilm(data);
+        dispatch({ type: "success", film: data });
       })
       .catch((e) => {
         if (cancelled) return;
-        setError(e);
-        setFilm(null);
-      })
-      .finally(() => {
-        if (cancelled) return;
-        setLoading(false);
+        dispatch({ type: "error", error: e });
       });
 
     return () => {

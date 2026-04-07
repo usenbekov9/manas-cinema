@@ -5,11 +5,20 @@ import "./styles/global.css";
 import "./styles/layout.css";
 import "./styles/components.css";
 import App from "./App.jsx";
+import { AuthProvider } from "./state/auth.jsx";
+import { LocaleProvider } from "./state/locale.jsx";
+import { FavoritesProvider } from "./state/favorites.jsx";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <BrowserRouter>
-      <App />
+      <LocaleProvider>
+        <AuthProvider>
+          <FavoritesProvider>
+            <App />
+          </FavoritesProvider>
+        </AuthProvider>
+      </LocaleProvider>
     </BrowserRouter>
   </StrictMode>
 );

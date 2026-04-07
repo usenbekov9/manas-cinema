@@ -1,13 +1,23 @@
 :root {
-  --bg: #0b0b0f;
-  --surface: #111118;
-  --surface-soft: #171720;
-  --accent: #ff3b3b;
-  --text: #ffffff;
-  --text-secondary: #aaaaaa;
-  --stroke: #232331;
-  --container-width: 1200px;
-  --radius: 16px;
+  --bg: #080607;
+  --bg-elevated: #100d0d;
+  --surface: rgba(22, 18, 18, 0.82);
+  --surface-strong: #1a1414;
+  --surface-soft: rgba(33, 26, 24, 0.82);
+  --accent: #d6a86a;
+  --accent-strong: #f2c27c;
+  --accent-deep: #8c6030;
+  --text: #f7f0e8;
+  --text-secondary: #b9ada0;
+  --text-muted: #887c72;
+  --stroke: rgba(214, 168, 106, 0.14);
+  --stroke-strong: rgba(214, 168, 106, 0.3);
+  --container-width: 1280px;
+  --radius: 22px;
+  --shadow-soft: 0 18px 50px rgba(0, 0, 0, 0.28);
+  --shadow-strong: 0 28px 80px rgba(0, 0, 0, 0.42);
+  --font-body: "Manrope", "Segoe UI", sans-serif;
+  --font-display: "Cormorant Garamond", Georgia, serif;
 }
 
 * {
@@ -22,9 +32,26 @@ body,
 }
 
 body {
-  font-family: Inter, "SF Pro Display", "Segoe UI", sans-serif;
-  background: radial-gradient(circle at 20% -10%, rgba(255, 59, 59, 0.16), transparent 28%), var(--bg);
+  font-family: var(--font-body);
+  background:
+    radial-gradient(circle at 18% -10%, rgba(214, 168, 106, 0.16), transparent 28%),
+    radial-gradient(circle at 85% 0%, rgba(117, 57, 34, 0.24), transparent 30%),
+    linear-gradient(180deg, #120d0c 0%, #080607 38%, #090708 100%);
   color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+h1,
+h2,
+h3,
+.header__logo,
+.watch-trailer-card__content h2,
+.watch-stage__details h1,
+.hero-slider__left h1,
+.page-heading h1 {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+  font-weight: 600;
 }
 
 a {
@@ -40,4 +67,19 @@ img {
 button,
 select {
   font: inherit;
+}
+
+::selection {
+  background: rgba(214, 168, 106, 0.28);
+  color: #fff7ed;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(214, 168, 106, 0.22);
 }

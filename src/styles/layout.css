@@ -1,7 +1,7 @@
 .container {
-  max-width: 1200px;
+  max-width: var(--container-width);
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 28px;
 }
 
 .app {
@@ -11,11 +11,11 @@
 }
 
 .page {
-  padding: 24px 0 48px;
+  padding: 30px 0 64px;
 }
 
 .page-heading {
-  padding: 16px 0;
+  padding: 20px 0 10px;
 }
 
 .page-heading__inner {
@@ -25,28 +25,35 @@
   gap: 16px;
 }
 
+.page-heading__inner--stacked {
+  align-items: flex-end;
+}
+
 .page-heading h1 {
   margin: 0;
-  font-size: 2rem;
+  font-size: clamp(2.4rem, 4vw, 4rem);
+  line-height: 0.96;
 }
 
 .page-heading p {
-  margin: 8px 0 0;
+  margin: 10px 0 0;
+  max-width: 640px;
   color: var(--text-secondary);
+  font-size: 1rem;
 }
 
 .movie-grid-section {
-  padding-top: 16px;
+  padding-top: 22px;
 }
 
 .movie-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 20px;
+  gap: 24px;
 }
 
 .empty-state {
-  padding: 64px 24px;
+  padding: 80px 24px;
   text-align: center;
   color: var(--text-secondary);
 }
@@ -59,11 +66,11 @@
 
 @media (max-width: 768px) {
   .container {
-    padding: 0 16px;
+    padding: 0 18px;
   }
 
   .page {
-    padding: 16px 0 32px;
+    padding: 18px 0 36px;
   }
 
   .page-heading__inner {

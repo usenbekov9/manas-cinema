@@ -1,4 +1,7 @@
 import { motion } from "framer-motion";
+import PropTypes from "prop-types";
+import { hasFilmId } from "../services/movieService";
+import { filmShape } from "../utils/propTypes";
 import MovieCard from "./MovieCard";
 
 export default function MovieRow({ title, movies, favoriteIds, onToggleFavorite }) {
@@ -19,7 +22,7 @@ export default function MovieRow({ title, movies, favoriteIds, onToggleFavorite 
             <MovieCard
               key={movie.id}
               movie={movie}
-              isFavorite={favoriteIds.includes(movie.id)}
+              isFavorite={hasFilmId(favoriteIds, movie.id)}
               onToggleFavorite={onToggleFavorite}
             />
           ))}
@@ -28,3 +31,10 @@ export default function MovieRow({ title, movies, favoriteIds, onToggleFavorite 
     </section>
   );
 }
+
+MovieRow.propTypes = {
+  title: PropTypes.string.isRequired,
+  movies: PropTypes.arrayOf(filmShape).isRequired,
+  favoriteIds: PropTypes.arrayOf(PropTypes.oneOfType([PropTypes.string, PropTypes.number])).isRequired,
+  onToggleFavorite: PropTypes.func.isRequired,
+};

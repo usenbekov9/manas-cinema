@@ -1,8 +1,12 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Play, Plus, Star } from "lucide-react";
+import PropTypes from "prop-types";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getFilmTrailerSource } from "../services/movieService";
 import { useFavorites } from "../state/favorites.jsx";
+import { useLocale } from "../state/locale";
+import { filmShape } from "../utils/propTypes";
 
 function preloadImages(films) {
   if (!Array.isArray(films)) return;
@@ -15,9 +19,15 @@ function preloadImages(films) {
   }
 }
 
+Hero.propTypes = {
+  films: PropTypes.arrayOf(filmShape),
+  fallbackFilm: filmShape,
+};
+
 export default function Hero({ films, fallbackFilm }) {
   const navigate = useNavigate();
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { t } = useLocale();
 
   const items = useMemo(
     () => (Array.isArray(films) && films.length ? films : fallbackFilm ? [fallbackFilm] : []),
@@ -26,10 +36,7 @@ export default function Hero({ films, fallbackFilm }) {
 
   const [activeIndex, setActiveIndex] = useState(0);
   const pauseRef = useRef(false);
-
-  useEffect(() => {
-    setActiveIndex(0);
-  }, [items.length]);
+  const safeActiveIndex = items.length ? Math.min(activeIndex, items.length - 1) : 0;
 
   useEffect(() => {
     preloadImages(items);
@@ -46,8 +53,9 @@ export default function Hero({ films, fallbackFilm }) {
     return () => clearInterval(id);
   }, [items.length]);
 
-  const active = items[activeIndex];
+  const active = items[safeActiveIndex];
   const fav = active ? isFavorite(active.id) : false;
+  const trailerSource = active ? getFilmTrailerSource(active) : null;
 
   const canSlide = items.length > 1;
   const prev = () => canSlide && setActiveIndex((i) => (i - 1 + items.length) % items.length);
@@ -61,7 +69,7 @@ export default function Hero({ films, fallbackFilm }) {
           <div className="hero__content">
             <div className="hero__container">
               <div className="hero__badge">
-                <Star size={14} /> Featured
+                <Star size={14} /> {t("hero.featured")}
               </div>
               <div className="skeleton skeleton--heroTitle" />
               <div className="skeleton skeleton--heroText" />
@@ -123,14 +131,14 @@ export default function Hero({ films, fallbackFilm }) {
               >
                 <div className="hero__top">
                   <div className="hero__badge">
-                    <Star size={14} /> Featured
+                    <Star size={14} /> {t("hero.featured")}
                   </div>
 
-                  <div className="hero__controls" aria-label="Hero controls">
-                    <button className="hero__arrow" type="button" onClick={prev} disabled={!canSlide} aria-label="Previous">
+                  <div className="hero__controls" aria-label={t("hero.controls")}>
+                    <button className="hero__arrow" type="button" onClick={prev} disabled={!canSlide} aria-label={t("hero.previous")}>
                       <ChevronLeft size={18} />
                     </button>
-                    <button className="hero__arrow" type="button" onClick={next} disabled={!canSlide} aria-label="Next">
+                    <button className="hero__arrow" type="button" onClick={next} disabled={!canSlide} aria-label={t("hero.next")}>
                       <ChevronRight size={18} />
                     </button>
                   </div>
@@ -140,28 +148,33 @@ export default function Hero({ films, fallbackFilm }) {
                 <p className="hero__desc">{active.description}</p>
 
                 <div className="hero__actions">
-                  <button className="btn btn--primary" onClick={() => navigate(`/movies/${active.id}`)} type="button">
-                    <Play size={18} /> Details
+                  <button className="btn btn--primary" onClick={() => navigate(`/watch/${active.id}`)} type="button">
+                    <Play size={18} /> {t("common.watch")}
                   </button>
+                  {trailerSource && (
+                    <button className="btn btn--ghost" onClick={() => navigate(`/watch/${active.id}?source=trailer`)} type="button">
+                      <Play size={18} /> {t("common.trailer")}
+                    </button>
+                  )}
                   <button
                     className={fav ? "btn btn--ghost btn--active" : "btn btn--ghost"}
                     onClick={() => toggleFavorite(active.id)}
                     type="button"
                   >
-                    <Plus size={18} /> {fav ? "Saved" : "Save"}
+                    <Plus size={18} /> {fav ? t("common.saved") : t("common.save")}
                   </button>
                 </div>
 
-                <div className="hero__dots" role="tablist" aria-label="Select featured movie">
+                <div className="hero__dots" role="tablist" aria-label={t("hero.selectFeatured")}>
                   {items.map((f, idx) => (
                     <button
                       key={f.id}
-                      className={idx === activeIndex ? "hero__dot hero__dot--active" : "hero__dot"}
+                      className={idx === safeActiveIndex ? "hero__dot hero__dot--active" : "hero__dot"}
                       type="button"
                       onClick={() => setActiveIndex(idx)}
-                      aria-label={`Show ${f.title}`}
+                      aria-label={t("hero.showMovie", { title: f.title })}
                       role="tab"
-                      aria-selected={idx === activeIndex}
+                      aria-selected={idx === safeActiveIndex}
                     />
                   ))}
                 </div>

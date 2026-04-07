@@ -1,12 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, Heart, Play } from "lucide-react";
+import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
-import { parseGenres } from "../services/movieService";
+import { getFilmRatingLabel, hasFilmId, parseGenres } from "../services/movieService";
+import { useLocale } from "../state/locale";
+import { filmShape } from "../utils/propTypes";
 
 export default function HeroSlider({ movies, favoriteIds, onToggleFavorite }) {
+  const { t } = useLocale();
   const heroMovies = useMemo(() => movies.slice(0, 5), [movies]);
   const [index, setIndex] = useState(0);
+  const safeIndex = heroMovies.length ? Math.min(index, heroMovies.length - 1) : 0;
 
   useEffect(() => {
     if (heroMovies.length < 2) return undefined;
@@ -16,24 +21,19 @@ export default function HeroSlider({ movies, favoriteIds, onToggleFavorite }) {
     return () => clearInterval(timer);
   }, [heroMovies.length]);
 
-  useEffect(() => {
-    if (!heroMovies.length) return;
-    setIndex((prev) => Math.min(prev, heroMovies.length - 1));
-  }, [heroMovies.length]);
-
   if (!heroMovies.length) {
     return (
       <section className="hero-slider">
         <div className="container">
-          <div className="hero-slider__empty">No featured movies available.</div>
+          <div className="hero-slider__empty">{t("heroSlider.empty")}</div>
         </div>
       </section>
     );
   }
 
-  const movie = heroMovies[index];
+  const movie = heroMovies[safeIndex];
   const genres = parseGenres(movie).slice(0, 3).join(" • ");
-  const isFavorite = favoriteIds.includes(movie.id);
+  const isFavorite = hasFilmId(favoriteIds, movie.id);
 
   const goNext = () => setIndex((prev) => (prev + 1) % heroMovies.length);
   const goPrev = () => setIndex((prev) => (prev - 1 + heroMovies.length) % heroMovies.length);
@@ -53,14 +53,14 @@ export default function HeroSlider({ movies, favoriteIds, onToggleFavorite }) {
             >
               <div className="hero-slider__left">
                 <p className="hero-slider__meta">
-                  {genres || "Featured"} • {movie.rating} ★ • {movie.year}
+                  {genres || t("heroSlider.featured")} • {getFilmRatingLabel(movie)} ★ • {movie.year}
                 </p>
                 <h1>{movie.title}</h1>
                 <p>{movie.description}</p>
                 <div className="hero-slider__buttons">
-                  <Link className="btn btn--primary" to={`/movies/${movie.id}`}>
+                  <Link className="btn btn--primary" to={`/watch/${movie.id}`}>
                     <Play size={16} />
-                    Watch
+                    {t("common.watch")}
                   </Link>
                   <button
                     type="button"
@@ -68,7 +68,7 @@ export default function HeroSlider({ movies, favoriteIds, onToggleFavorite }) {
                     onClick={() => onToggleFavorite(movie.id)}
                   >
                     <Heart size={16} />
-                    Add to Favorites
+                    {t("heroSlider.addToFavorites")}
                   </button>
                 </div>
               </div>
@@ -91,9 +91,9 @@ export default function HeroSlider({ movies, favoriteIds, onToggleFavorite }) {
               <button
                 key={item.id}
                 type="button"
-                className={`hero-slider__dot ${itemIndex === index ? "hero-slider__dot--active" : ""}`}
+                className={`hero-slider__dot ${itemIndex === safeIndex ? "hero-slider__dot--active" : ""}`}
                 onClick={() => setIndex(itemIndex)}
-                aria-label={`Go to slide ${itemIndex + 1}`}
+                aria-label={t("heroSlider.goToSlide", { index: itemIndex + 1 })}
               />
             ))}
           </div>
@@ -102,3 +102,9 @@ export default function HeroSlider({ movies, favoriteIds, onToggleFavorite }) {
     </section>
   );
 }
+
+HeroSlider.propTypes = {
+  movies: PropTypes.arrayOf(filmShape).isRequired,
+  favoriteIds: PropTypes.arrayOf(PropTypes.oneOfType([PropTypes.string, PropTypes.number])).isRequired,
+  onToggleFavorite: PropTypes.func.isRequired,
+};
