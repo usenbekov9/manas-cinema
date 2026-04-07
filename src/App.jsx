@@ -1,4 +1,5 @@
 import PropTypes from "prop-types";
+import { X } from "lucide-react";
 import { useState } from "react";
 import { Navigate, NavLink, Route, Routes } from "react-router-dom";
 import Header from "./components/Header";
@@ -40,30 +41,41 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <div className="app">
+      <div className={showMobileMenu ? "app app--mobile-menu-open" : "app"}>
         <Header onToggleMobileMenu={() => setShowMobileMenu((prev) => !prev)} />
 
         {showMobileMenu && (
-          <div className="mobile-menu">
-            <div className="container mobile-menu__inner">
-              <NavLink to="/" onClick={closeMenu}>
-                {t("common.home")}
-              </NavLink>
-              <NavLink to="/movies" onClick={closeMenu}>
-                {t("common.movies")}
-              </NavLink>
-              <NavLink to="/series" onClick={closeMenu}>
-                {t("common.series")}
-              </NavLink>
-              <NavLink to="/trailers" onClick={closeMenu}>
-                {t("common.trailers")}
-              </NavLink>
-              <NavLink to="/favorites" onClick={closeMenu}>
-                {t("common.favorites")}
-              </NavLink>
-              <NavLink to="/profile" onClick={closeMenu}>
-                {t("common.profile")}
-              </NavLink>
+          <div className="mobile-menu" onClick={closeMenu}>
+            <div className="mobile-menu__panel" onClick={(event) => event.stopPropagation()}>
+              <div className="mobile-menu__header">
+                <div className="mobile-menu__brand">
+                  <span className="mobile-menu__brand-mark">Manas</span>
+                  <span className="mobile-menu__brand-sub">Cinema</span>
+                </div>
+                <button type="button" className="mobile-menu__close" onClick={closeMenu} aria-label={t("common.closeMenu")}>
+                  <X size={18} />
+                </button>
+              </div>
+              <div className="mobile-menu__inner">
+                <NavLink to="/" onClick={closeMenu}>
+                  {t("common.home")}
+                </NavLink>
+                <NavLink to="/movies" onClick={closeMenu}>
+                  {t("common.movies")}
+                </NavLink>
+                <NavLink to="/series" onClick={closeMenu}>
+                  {t("common.series")}
+                </NavLink>
+                <NavLink to="/trailers" onClick={closeMenu}>
+                  {t("common.trailers")}
+                </NavLink>
+                <NavLink to="/favorites" onClick={closeMenu}>
+                  {t("common.favorites")}
+                </NavLink>
+                <NavLink to="/profile" onClick={closeMenu}>
+                  {t("common.profile")}
+                </NavLink>
+              </div>
             </div>
           </div>
         )}

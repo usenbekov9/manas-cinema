@@ -166,6 +166,32 @@ function pickFilmField(movie, keys) {
   return null;
 }
 
+function pickFilmFieldByMatcher(movie, matcher) {
+  if (!movie || typeof movie !== "object") {
+    return null;
+  }
+
+  for (const [key, value] of Object.entries(movie)) {
+    if (!matcher(key, value)) {
+      continue;
+    }
+
+    if (value === 0) {
+      return value;
+    }
+
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return value;
+    }
+  }
+
+  return null;
+}
+
 function parseNumericValue(value) {
   if (typeof value === "number") {
     return Number.isFinite(value) ? value : null;
@@ -501,12 +527,39 @@ export function getFilmRating(movie) {
     "avg_rating",
     "average_rating",
     "imdb_rating",
+    "imdb",
     "kp_rating",
+    "kinopoisk_rating",
+    "kinopoisk",
+    "tmdb_rating",
+    "tmdb_score",
+    "vote_average",
+    "rating_imdb",
+    "rating_kp",
     "score",
     "film_rating",
     "stars",
     "rate",
-  ]);
+  ]) ?? pickFilmFieldByMatcher(movie, (key, value) => {
+    if (typeof value !== "string" && typeof value !== "number") {
+      return false;
+    }
+
+    const normalizedKey = String(key).toLowerCase();
+
+    if (normalizedKey.includes("count") || normalizedKey.includes("votes") || normalizedKey.includes("reviews")) {
+      return false;
+    }
+
+    return (
+      normalizedKey.includes("rating") ||
+      normalizedKey.includes("score") ||
+      normalizedKey.includes("imdb") ||
+      normalizedKey.includes("kinopoisk") ||
+      normalizedKey.includes("tmdb") ||
+      normalizedKey === "rate"
+    );
+  });
 
   return parseNumericValue(value);
 }
@@ -525,7 +578,24 @@ export function getFilmVoteCount(movie) {
     "review_count",
     "reviews_count",
     "vote_count",
-  ]);
+    "voteCount",
+    "imdb_votes",
+    "kinopoisk_votes",
+    "tmdb_votes",
+  ]) ?? pickFilmFieldByMatcher(movie, (key, value) => {
+    if (typeof value !== "string" && typeof value !== "number") {
+      return false;
+    }
+
+    const normalizedKey = String(key).toLowerCase();
+
+    return (
+      normalizedKey.includes("vote") ||
+      normalizedKey.includes("votes") ||
+      normalizedKey.includes("review_count") ||
+      normalizedKey.includes("rating_count")
+    );
+  });
 
   const count = parseNumericValue(value);
   return count == null ? null : Math.round(count);

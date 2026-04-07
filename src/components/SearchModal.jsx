@@ -82,10 +82,6 @@ export default function SearchModal({ isOpen, onClose, onMovieSelect }) {
   return (
     <div className="search-modal" onClick={onClose}>
       <div className="search-modal__content" onClick={(e) => e.stopPropagation()}>
-        <button type="button" className="search-modal__close" onClick={onClose} aria-label={t("common.closeSearch")}>
-          <X size={24} />
-        </button>
-
         <div className="search-modal__input-wrapper">
           <SearchIcon size={20} className="search-modal__icon" />
           <input
@@ -96,6 +92,9 @@ export default function SearchModal({ isOpen, onClose, onMovieSelect }) {
             onChange={(e) => setQuery(e.target.value)}
             autoFocus
           />
+          <button type="button" className="search-modal__close" onClick={onClose} aria-label={t("common.closeSearch")}>
+            <X size={20} />
+          </button>
         </div>
 
         {query.trim() && (

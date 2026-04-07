@@ -4,12 +4,11 @@ import GenreFilter from "../components/GenreFilter";
 import MovieCard from "../components/MovieCard";
 import { useFavorites } from "../state/favorites";
 import { useLocale } from "../state/locale";
-import { getAllFilms, getFilmRating, hasFilmId, parseGenres } from "../services/movieService";
+import { getAllFilms, hasFilmId, parseGenres } from "../services/movieService";
 
 export default function Movies() {
   const [movies, setMovies] = useState([]);
   const [activeGenre, setActiveGenre] = useState("All");
-  const [sortBy, setSortBy] = useState("Latest");
   const [isLoading, setIsLoading] = useState(true);
   const { t } = useLocale();
   const { favoriteIds, toggleFavorite } = useFavorites();
@@ -24,22 +23,15 @@ export default function Movies() {
       .finally(() => setIsLoading(false));
   }, []);
 
-  const filteredAndSorted = useMemo(() => {
-    const genreFiltered =
+  const filteredMovies = useMemo(() => {
+    return (
       activeGenre === "All"
         ? movies
         : movies.filter((movie) =>
             parseGenres(movie).some((genre) => genre.toLowerCase() === activeGenre.toLowerCase())
-          );
-
-    const list = [...genreFiltered];
-    if (sortBy === "Latest") list.sort((a, b) => b.year - a.year);
-    if (sortBy === "A-Z") list.sort((a, b) => a.title.localeCompare(b.title));
-    if (sortBy === "Year") list.sort((a, b) => a.year - b.year);
-    if (sortBy === "Rating") list.sort((a, b) => (getFilmRating(b) || 0) - (getFilmRating(a) || 0));
-
-    return list;
-  }, [activeGenre, movies, sortBy]);
+          )
+    );
+  }, [activeGenre, movies]);
 
   const handleToggleFavorite = (movieId) => toggleFavorite(movieId);
 
@@ -48,12 +40,6 @@ export default function Movies() {
       <section className="page-heading">
         <div className="container page-heading__inner">
           <h1>{t("movies.title")}</h1>
-          <select value={sortBy} onChange={(event) => setSortBy(event.target.value)} className="sort-select">
-            <option>Latest</option>
-            <option>A-Z</option>
-            <option>Year</option>
-            <option>Rating</option>
-          </select>
         </div>
       </section>
 
@@ -65,12 +51,12 @@ export default function Movies() {
             <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "40px" }}>
               <p>{t("movies.loading")}</p>
             </div>
-          ) : filteredAndSorted.length === 0 ? (
+          ) : filteredMovies.length === 0 ? (
             <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "40px" }}>
               <p>{t("movies.empty")}</p>
             </div>
           ) : (
-            filteredAndSorted.map((movie) => (
+            filteredMovies.map((movie) => (
               <MovieCard
                 key={movie.id}
                 movie={movie}

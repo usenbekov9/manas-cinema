@@ -40,9 +40,9 @@ export default function Series() {
           <p>{t("series.subtitle")}</p>
         </div>
       </section>
-      
+
       <GenreFilter activeGenre={activeGenre} onChange={setActiveGenre} />
-      
+
       <section className="movie-grid-section">
         <div className="container movie-grid">
           {isLoading ? (
