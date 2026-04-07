@@ -1,15 +1,18 @@
 import { useMemo, useState } from "react";
-import { Menu, Search, User } from "lucide-react";
+import { Heart, Menu, Search, User } from "lucide-react";
 import PropTypes from "prop-types";
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import SearchModal from "./SearchModal";
 import { useAuth } from "../state/auth";
+import { useFavorites } from "../state/favorites";
 import { useLocale } from "../state/locale";
 
 export default function Header({ onToggleMobileMenu }) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { isAuthenticated, user } = useAuth();
+  const { favoriteIds } = useFavorites();
   const { locale, setLocale, t } = useLocale();
 
   const navItems = useMemo(() => [
@@ -65,6 +68,14 @@ export default function Header({ onToggleMobileMenu }) {
             >
               <Search size={18} />
             </button>
+            <NavLink
+              to="/favorites"
+              className={location.pathname.startsWith("/favorites") ? "icon-button icon-button--active icon-button--favorites" : "icon-button icon-button--favorites"}
+              aria-label={t("common.favorites")}
+            >
+              <Heart size={18} />
+              {favoriteIds.length > 0 && <span className="icon-button__badge">{favoriteIds.length}</span>}
+            </NavLink>
             <div className="locale-switcher" aria-label={t("common.language")}>
               <button
                 type="button"
