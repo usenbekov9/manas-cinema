@@ -4,13 +4,16 @@ import { Clock3, Heart, Play, Share2, Sparkles, Star, TriangleAlert, Users } fro
 import { useLocation, useParams, useSearchParams } from "react-router-dom";
 import MovieRow from "../components/MovieRow";
 import { useWatchProgress } from "../hooks/useWatchProgress";
+import { useAuth } from "../state/auth";
 import { useFavorites } from "../state/favorites";
 import { useLocale } from "../state/locale";
 import {
+  addFilmReview,
   getAutoplayMediaSource,
   getAllFilms,
   getFilmById,
   getFilmPlayerSource,
+  getFilmReviews,
   getFilmRatingLabel,
   getFilmTrailerSource,
   getFilmVoteCount,
@@ -18,6 +21,8 @@ import {
   isSameFilmId,
   parseGenres,
   addToWatchHistory,
+  FILM_REVIEW_MAX_LENGTH,
+  subscribeToFilmReviews,
 } from "../services/movieService";
 
 function getListField(movie, keys) {
@@ -82,6 +87,7 @@ function getReviewItems(movie, t) {
           id: review.id ?? index,
           author: review.author ?? review.user ?? t("movieDetails.viewer"),
           text: review.text ?? review.comment ?? "",
+          createdAt: Number(review.createdAt ?? review.created_at) || null,
         };
       }
 
@@ -102,17 +108,39 @@ function getProgressLabel(progress, t) {
   return t("movieDetails.readyToStart");
 }
 
+function formatReviewDate(createdAt, locale) {
+  const timestamp = Number(createdAt);
+
+  if (!Number.isFinite(timestamp) || timestamp <= 0) {
+    return "";
+  }
+
+  try {
+    return new Intl.DateTimeFormat(locale === "ky" ? "ky-KG" : "ru-RU", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }).format(new Date(timestamp));
+  } catch {
+    return "";
+  }
+}
+
 export default function MovieDetails() {
   const { id } = useParams();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const isWatchRoute = location.pathname.startsWith("/watch/");
   const requestedSource = searchParams.get("source") === "trailer" ? "trailer" : "main";
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
+  const { isAuthenticated, user } = useAuth();
   const { favoriteIds, toggleFavorite } = useFavorites();
   const { progress, setProgress } = useWatchProgress(id);
   const [activeTab, setActiveTab] = useState("description");
   const [shareFeedback, setShareFeedback] = useState("");
+  const [reviewText, setReviewText] = useState("");
+  const [reviewError, setReviewError] = useState("");
+  const [reviewFeedback, setReviewFeedback] = useState("");
+  const [communityReviews, setCommunityReviews] = useState([]);
   const [sourceSelection, setSourceSelection] = useState(() => ({ movieId: id, mode: requestedSource }));
   const playerRef = useRef(null);
   const hlsRef = useRef(null);
@@ -189,7 +217,6 @@ export default function MovieDetails() {
   ]), [t]);
   const cast = useMemo(() => getListField(movie, ["cast", "actors", "actor", "starring"]), [movie]);
   const crew = useMemo(() => getListField(movie, ["crew", "director", "directors", "writers", "producer"]), [movie]);
-  const reviews = useMemo(() => getReviewItems(movie, t), [movie, t]);
   const accessLabel = useMemo(() => getAccessLabel(movie, t), [movie, t]);
   const ageLabel = useMemo(() => getAgeLabel(movie), [movie]);
   const durationLabel = useMemo(() => formatDuration(movie, t), [movie, t]);
@@ -199,6 +226,15 @@ export default function MovieDetails() {
   useEffect(() => {
     setSourceSelection({ movieId: id, mode: requestedSource });
   }, [id, requestedSource]);
+
+  useEffect(() => {
+    setCommunityReviews(getFilmReviews(id));
+    setReviewText("");
+    setReviewError("");
+    setReviewFeedback("");
+
+    return subscribeToFilmReviews(id, setCommunityReviews);
+  }, [id]);
 
   const activeSourceMode = sourceSelection.movieId === id
     ? sourceSelection.mode
@@ -215,6 +251,11 @@ export default function MovieDetails() {
   const sourceKey = playableSource ? `${activeSourceMode}:${playableSource.src}` : `poster:${movie?.id ?? id}`;
   const statusLabel = getProgressLabel(progress, t);
   const voteLabel = getFilmVoteCount(movie);
+  const reviewAuthor = useMemo(() => {
+    const nameSource = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "";
+    return nameSource.trim() || t("movieDetails.viewer");
+  }, [t, user]);
+  const reviews = useMemo(() => [...communityReviews, ...getReviewItems(movie, t)], [communityReviews, movie, t]);
 
   useEffect(() => {
     const video = playerRef.current;
@@ -384,6 +425,36 @@ export default function MovieDetails() {
     }
   };
 
+  const handleReviewSubmit = (event) => {
+    event.preventDefault();
+
+    const normalizedText = reviewText.replace(/\r\n?/g, "\n").trim();
+
+    if (!normalizedText) {
+      setReviewError(t("movieDetails.reviewEmptyError"));
+      setReviewFeedback("");
+      return;
+    }
+
+    if (normalizedText.length > FILM_REVIEW_MAX_LENGTH) {
+      setReviewError(t("movieDetails.reviewTooLong", { count: FILM_REVIEW_MAX_LENGTH }));
+      setReviewFeedback("");
+      return;
+    }
+
+    addFilmReview(movie.id, {
+      author: reviewAuthor,
+      text: normalizedText,
+      userId: user?.id ?? null,
+      createdAt: Date.now(),
+    });
+
+    setReviewText("");
+    setReviewError("");
+    setReviewFeedback(t("movieDetails.reviewSaved"));
+    setActiveTab("reviews");
+  };
+
   const tabContent = {
     description: (
       <div className="watch-panel__copy">
@@ -397,17 +468,64 @@ export default function MovieDetails() {
         </div>
       </div>
     ),
-    reviews: reviews.length > 0 ? (
-      <div className="watch-review-list">
-        {reviews.map((review) => (
-          <article key={review.id} className="watch-review">
-            <div className="watch-review__author">{review.author}</div>
-            <p>{review.text}</p>
-          </article>
-        ))}
+    reviews: (
+      <div className="watch-reviews-panel">
+        <form className="watch-review-form" onSubmit={handleReviewSubmit}>
+          <div className="watch-review-form__header">
+            <div>
+              <h3>{t("movieDetails.writeReview")}</h3>
+              <p>
+                {isAuthenticated
+                  ? t("movieDetails.reviewSignedIn", { name: reviewAuthor })
+                  : t("movieDetails.reviewGuest")}
+              </p>
+            </div>
+            <span className="watch-review-form__counter">{reviewText.length}/{FILM_REVIEW_MAX_LENGTH}</span>
+          </div>
+          <textarea
+            className="watch-review-form__textarea"
+            value={reviewText}
+            onChange={(event) => {
+              setReviewText(event.target.value);
+              if (reviewError) {
+                setReviewError("");
+              }
+              if (reviewFeedback) {
+                setReviewFeedback("");
+              }
+            }}
+            maxLength={FILM_REVIEW_MAX_LENGTH}
+            placeholder={t("movieDetails.reviewPlaceholder")}
+            aria-label={t("movieDetails.writeReview")}
+          />
+          <div className="watch-review-form__footer">
+            <span className={reviewError ? "watch-review-form__message watch-review-form__message--error" : "watch-review-form__message"}>
+              {reviewError || reviewFeedback || t("movieDetails.reviewTip")}
+            </span>
+            <button type="submit" className="btn btn--primary">{t("movieDetails.submitReview")}</button>
+          </div>
+        </form>
+
+        {reviews.length > 0 ? (
+          <div className="watch-review-list">
+            {reviews.map((review) => {
+              const reviewDate = formatReviewDate(review.createdAt, locale);
+
+              return (
+                <article key={review.id} className="watch-review">
+                  <div className="watch-review__header">
+                    <div className="watch-review__author">{review.author}</div>
+                    {reviewDate && <time className="watch-review__date" dateTime={new Date(review.createdAt).toISOString()}>{reviewDate}</time>}
+                  </div>
+                  <p>{review.text}</p>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="watch-panel__empty">{t("movieDetails.noReviews")}</div>
+        )}
       </div>
-    ) : (
-      <div className="watch-panel__empty">{t("movieDetails.noReviews")}</div>
     ),
     cast: cast.length > 0 ? (
       <div className="watch-people-grid">
@@ -644,7 +762,7 @@ export default function MovieDetails() {
             ))}
           </div>
 
-          <div className="watch-panel">{tabContent[activeTab]}</div>
+          <div className="watch-panel">{tabContent[activeTab] ?? null}</div>
         </div>
       </section>
 

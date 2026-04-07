@@ -3,10 +3,13 @@ import { supabase } from "./supabaseClient";
 const FAVORITES_KEY = "manas-cinema-favorites";
 const HISTORY_KEY = "manas-cinema-history";
 const PROGRESS_KEY = "manas-cinema-progress";
+const REVIEWS_KEY = "manas-cinema-reviews";
 const FAVORITES_EVENT = "manas-cinema:favorites-changed";
 const HISTORY_EVENT = "manas-cinema:history-changed";
 const PROGRESS_EVENT = "manas-cinema:progress-changed";
+const REVIEWS_EVENT = "manas-cinema:reviews-changed";
 const HISTORY_MAX = 50;
+export const FILM_REVIEW_MAX_LENGTH = 500;
 
 const filmCache = {
   data: null,
@@ -317,6 +320,45 @@ function normalizeProgressValue(progress) {
   return Math.max(0, Math.min(100, Math.round(value)));
 }
 
+function createReviewId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+
+  return `review-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function normalizeReview(review) {
+  if (!review || typeof review !== "object") {
+    return null;
+  }
+
+  const rawText = review.text ?? review.comment;
+  const text = typeof rawText === "string"
+    ? rawText.replace(/\r\n?/g, "\n").trim().slice(0, FILM_REVIEW_MAX_LENGTH)
+    : "";
+
+  if (!text) {
+    return null;
+  }
+
+  const rawAuthor = review.author ?? review.user;
+  const author = typeof rawAuthor === "string" && rawAuthor.trim()
+    ? rawAuthor.trim().slice(0, 80)
+    : "Viewer";
+  const createdAtValue = Number(review.createdAt ?? review.created_at ?? Date.now());
+
+  return {
+    id: String(review.id ?? createReviewId()),
+    author,
+    text,
+    createdAt: Number.isFinite(createdAtValue) ? createdAtValue : Date.now(),
+    userId: review.userId == null && review.user_id == null
+      ? null
+      : String(review.userId ?? review.user_id),
+  };
+}
+
 // ===== FETCH FILMS =====
 export async function getAllFilms(options = {}) {
   const { force = false } = options;
@@ -518,6 +560,70 @@ export function setWatchProgress(movieId, progress) {
 
 export function subscribeToWatchProgress(listener) {
   return subscribeToStorageValue(PROGRESS_KEY, PROGRESS_EVENT, getWatchProgressMap, (value) => listener(safeObject(value)));
+}
+
+// ===== REVIEWS =====
+export function getFilmReviews(movieId) {
+  if (movieId == null) {
+    return [];
+  }
+
+  const reviewsMap = readStorageObject(REVIEWS_KEY);
+
+  return safeArray(reviewsMap[String(movieId)])
+    .map(normalizeReview)
+    .filter(Boolean)
+    .sort((left, right) => right.createdAt - left.createdAt);
+}
+
+export function setFilmReviews(movieId, reviews) {
+  if (movieId == null) {
+    return [];
+  }
+
+  const key = String(movieId);
+  const nextReviews = safeArray(reviews)
+    .map(normalizeReview)
+    .filter(Boolean)
+    .sort((left, right) => right.createdAt - left.createdAt);
+  const nextMap = {
+    ...readStorageObject(REVIEWS_KEY),
+  };
+
+  if (nextReviews.length === 0) {
+    delete nextMap[key];
+  } else {
+    nextMap[key] = nextReviews;
+  }
+
+  writeStorageObject(REVIEWS_KEY, nextMap);
+  emitLibraryEvent(REVIEWS_EVENT, { movieId: key, reviews: nextReviews });
+  return nextReviews;
+}
+
+export function addFilmReview(movieId, review) {
+  if (movieId == null) {
+    return [];
+  }
+
+  const normalizedReview = normalizeReview(review);
+
+  if (!normalizedReview) {
+    return getFilmReviews(movieId);
+  }
+
+  return setFilmReviews(movieId, [normalizedReview, ...getFilmReviews(movieId)]);
+}
+
+export function subscribeToFilmReviews(movieId, listener) {
+  if (movieId == null) {
+    listener([]);
+    return () => {};
+  }
+
+  return subscribeToStorageValue(REVIEWS_KEY, REVIEWS_EVENT, () => getFilmReviews(movieId), () => {
+    listener(getFilmReviews(movieId));
+  });
 }
 
 // ===== UTILITIES =====
