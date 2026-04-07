@@ -91,7 +91,8 @@ export const messages = {
       savedCount: "Сохранено: {count}",
     },
     notFound: {
-      subtitle: "Такой страницы не существует.",
+      heading: "Страница не найдена",
+      description: "Страница, которую вы ищете, не существует или была перемещена.",
       action: "На главную",
     },
     states: {
@@ -340,7 +341,8 @@ export const messages = {
       savedCount: "Сакталды: {count}",
     },
     notFound: {
-      subtitle: "Мындай барак жок.",
+      heading: "Барак табылган жок",
+      description: "Издөөдөгү барак жок же башка жакка көчүрүлгөн.",
       action: "Башкы бетке",
     },
     states: {
